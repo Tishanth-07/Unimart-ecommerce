@@ -1,98 +1,123 @@
 "use client";
+
 import React from "react";
-import { PaginationInfo } from "@/types";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PaginationProps {
-  pagination: PaginationInfo;
+  currentPage: number;
+  totalPages: number;
   onPageChange: (page: number) => void;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
 }
 
 const Pagination: React.FC<PaginationProps> = ({
-  pagination,
+  currentPage,
+  totalPages,
   onPageChange,
+  hasNextPage,
+  hasPrevPage,
 }) => {
-  const { currentPage, totalPages, hasPrev, hasNext } = pagination;
+  const getPageNumbers = () => {
+    const pages = [];
+    const showPages = 5; // Number of page buttons to show
+    const halfShow = Math.floor(showPages / 2);
 
-  const generatePageNumbers = () => {
-    const delta = 2;
-    const range = [];
-    const rangeWithDots = [];
+    let startPage = Math.max(1, currentPage - halfShow);
+    let endPage = Math.min(totalPages, currentPage + halfShow);
 
-    for (
-      let i = Math.max(2, currentPage - delta);
-      i <= Math.min(totalPages - 1, currentPage + delta);
-      i++
-    ) {
-      range.push(i);
+    // Adjust if we're near the beginning or end
+    if (currentPage <= halfShow) {
+      endPage = Math.min(totalPages, showPages);
+    } else if (currentPage > totalPages - halfShow) {
+      startPage = Math.max(1, totalPages - showPages + 1);
     }
 
-    if (currentPage - delta > 2) {
-      rangeWithDots.push(1, "...");
-    } else {
-      rangeWithDots.push(1);
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
     }
 
-    rangeWithDots.push(...range);
-
-    if (currentPage + delta < totalPages - 1) {
-      rangeWithDots.push("...", totalPages);
-    } else {
-      rangeWithDots.push(totalPages);
-    }
-
-    return rangeWithDots;
+    return pages;
   };
 
-  if (totalPages <= 1) return null;
+  if (totalPages <= 1) {
+    return null;
+  }
 
   return (
-    <div className="flex items-center justify-center space-x-1">
-      {/* Previous Button */}
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={!hasPrev}
-        className={`flex items-center px-3 py-2 rounded-md ${
-          hasPrev
-            ? "text-gray-700 hover:bg-gray-100"
-            : "text-gray-400 cursor-not-allowed"
-        }`}
-      >
-        <FiChevronLeft className="h-4 w-4 mr-1" />
-        Previous
-      </button>
+    <div className="flex items-center justify-between bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="flex items-center text-sm text-gray-700">
+        <span>
+          Page {currentPage} of {totalPages}
+        </span>
+      </div>
 
-      {/* Page Numbers */}
-      {generatePageNumbers().map((page, index) => (
+      <div className="flex items-center space-x-1">
+        {/* Previous Button */}
         <button
-          key={index}
-          onClick={() => typeof page === "number" && onPageChange(page)}
-          disabled={page === "..."}
-          className={`px-3 py-2 rounded-md ${
-            page === currentPage
-              ? "bg-primary-600 text-white"
-              : page === "..."
-              ? "text-gray-400 cursor-default"
-              : "text-gray-700 hover:bg-gray-100"
-          }`}
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={!hasPrevPage}
+          className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500"
         >
-          {page}
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Previous
         </button>
-      ))}
 
-      {/* Next Button */}
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={!hasNext}
-        className={`flex items-center px-3 py-2 rounded-md ${
-          hasNext
-            ? "text-gray-700 hover:bg-gray-100"
-            : "text-gray-400 cursor-not-allowed"
-        }`}
-      >
-        Next
-        <FiChevronRight className="h-4 w-4 ml-1" />
-      </button>
+        {/* First Page */}
+        {currentPage > 3 && (
+          <>
+            <button
+              onClick={() => onPageChange(1)}
+              className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              1
+            </button>
+            {currentPage > 4 && (
+              <span className="px-2 py-2 text-sm text-gray-500">...</span>
+            )}
+          </>
+        )}
+
+        {/* Page Numbers */}
+        {getPageNumbers().map((page) => (
+          <button
+            key={page}
+            onClick={() => onPageChange(page)}
+            className={`px-3 py-2 text-sm font-medium rounded-lg border ${
+              page === currentPage
+                ? "bg-primary-600 text-white border-primary-600"
+                : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            {page}
+          </button>
+        ))}
+
+        {/* Last Page */}
+        {currentPage < totalPages - 2 && (
+          <>
+            {currentPage < totalPages - 3 && (
+              <span className="px-2 py-2 text-sm text-gray-500">...</span>
+            )}
+            <button
+              onClick={() => onPageChange(totalPages)}
+              className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              {totalPages}
+            </button>
+          </>
+        )}
+
+        {/* Next Button */}
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={!hasNextPage}
+          className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500"
+        >
+          Next
+          <ChevronRight className="h-4 w-4 ml-1" />
+        </button>
+      </div>
     </div>
   );
 };

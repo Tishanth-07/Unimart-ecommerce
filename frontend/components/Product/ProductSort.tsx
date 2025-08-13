@@ -1,5 +1,7 @@
 "use client";
+
 import React from "react";
+import { ChevronDown } from "lucide-react";
 
 interface ProductSortProps {
   sortBy: string;
@@ -8,19 +10,29 @@ interface ProductSortProps {
 
 const ProductSort: React.FC<ProductSortProps> = ({ sortBy, onSortChange }) => {
   const sortOptions = [
-    { value: "default", label: "Default Sorting" },
-    { value: "price_low_high", label: "Price: Low to High" },
-    { value: "price_high_low", label: "Price: High to Low" },
-    { value: "rating_high", label: "Highest Rated" },
+    { label: "Default Sorting", value: "default" },
+    { label: "Price: Low to High", value: "price_asc" },
+    { label: "Price: High to Low", value: "price_desc" },
+    { label: "Highest Rated", value: "rating_desc" },
+    { label: "Most Popular", value: "popularity_desc" },
+    { label: "Newest First", value: "newest" },
+    { label: "Name: A to Z", value: "name_asc" },
+    { label: "Name: Z to A", value: "name_desc" },
   ];
 
+  const currentOption =
+    sortOptions.find((option) => option.value === sortBy) || sortOptions[0];
+
   return (
-    <div className="flex items-center space-x-2">
-      <span className="text-sm text-gray-700 font-medium">Sort by:</span>
+    <div className="relative">
+      <label htmlFor="sort-select" className="sr-only">
+        Sort products
+      </label>
       <select
+        id="sort-select"
         value={sortBy}
         onChange={(e) => onSortChange(e.target.value)}
-        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
       >
         {sortOptions.map((option) => (
           <option key={option.value} value={option.value}>
@@ -28,6 +40,7 @@ const ProductSort: React.FC<ProductSortProps> = ({ sortBy, onSortChange }) => {
           </option>
         ))}
       </select>
+      <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
     </div>
   );
 };

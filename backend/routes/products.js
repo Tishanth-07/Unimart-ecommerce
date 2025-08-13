@@ -1,13 +1,27 @@
-const express = require("express");
-const router = express.Router();
-const {
+import express from "express";
+import {
   getProducts,
-  getProduct,
-  createProduct,
-} = require("../controllers/productController");
+  getProductById,
+  getFeaturedProducts,
+  getPriceRange,
+  getCategories,
+} from "../controllers/productController.js";
 
+const router = express.Router();
+
+// Get all products with filtering, sorting, and pagination
 router.get("/", getProducts);
-router.get("/:id", getProduct);
-router.post("/", createProduct);
 
-module.exports = router;
+// Get featured products
+router.get("/featured", getFeaturedProducts);
+
+// Get price range for filters
+router.get("/price-range", getPriceRange);
+
+// Get all categories
+router.get("/categories", getCategories);
+
+// Get single product by ID
+router.get("/:id", getProductById);
+
+export default router;

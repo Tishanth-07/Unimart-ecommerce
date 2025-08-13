@@ -4,14 +4,14 @@ export interface Product {
   description: string;
   shortDescription: string;
   price: number;
-  discount: number;
-  discountedPrice: number;
+  discount?: number;
+  discountedPrice?: number;
   category: string;
   images: string[];
   stock: number;
   popularity: number;
   averageRating: number;
-  reviewCount: number;
+  totalReviews: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,58 +24,65 @@ export interface CartItem {
 export interface Order {
   _id: string;
   orderNumber: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  customerAddress: {
-    street: string;
-    city: string;
-    postalCode: string;
-    country: string;
-  };
   items: {
-    product: Product;
-    quantity: number;
+    productId: string;
+    name: string;
     price: number;
+    quantity: number;
+    images: string[];
   }[];
+  customerDetails: {
+    name: string;
+    email: string;
+    phone: string;
+    address: {
+      street: string;
+      city: string;
+      state: string;
+      zipCode: string;
+    };
+  };
   totalAmount: number;
+  status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
   paymentMethod: string;
-  status: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Review {
   _id: string;
-  product: string;
+  productId: string;
   customerName: string;
-  customerEmail: string;
   rating: number;
   comment: string;
   images?: string[];
   createdAt: string;
+  updatedAt: string;
 }
 
-export interface ContactForm {
+export interface Contact {
+  _id: string;
   name: string;
   email: string;
-  phone: string;
-  subject: string;
   message: string;
+  createdAt: string;
 }
 
-export interface FilterOptions {
+export interface FilterState {
+  priceRange: [number, number];
   categories: string[];
-  priceRange: {
-    min: number;
-    max: number;
-  };
   popularity: string[];
+}
+
+export interface SortOption {
+  label: string;
+  value: string;
 }
 
 export interface PaginationInfo {
   currentPage: number;
   totalPages: number;
-  total: number;
-  hasNext: boolean;
-  hasPrev: boolean;
+  totalProducts: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
 }

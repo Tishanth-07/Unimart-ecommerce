@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema(
   {
@@ -7,29 +7,51 @@ const orderSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    customerName: {
-      type: String,
-      required: true,
-    },
-    customerEmail: {
-      type: String,
-      required: true,
-    },
-    customerPhone: {
-      type: String,
-      required: true,
-    },
-    customerAddress: {
-      street: { type: String, required: true },
-      city: { type: String, required: true },
-      postalCode: { type: String, required: true },
-      country: { type: String, required: true },
+    customerDetails: {
+      name: {
+        type: String,
+        required: true,
+      },
+      email: {
+        type: String,
+        required: true,
+      },
+      phone: {
+        type: String,
+        required: true,
+      },
+      address: {
+        street: {
+          type: String,
+          required: true,
+        },
+        city: {
+          type: String,
+          required: true,
+        },
+        state: {
+          type: String,
+          required: true,
+        },
+        zipCode: {
+          type: String,
+          required: true,
+        },
+      },
     },
     items: [
       {
-        product: {
+        productId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Product",
+          required: true,
+        },
+        name: {
+          type: String,
+          required: true,
+        },
+        price: {
+          type: Number,
           required: true,
         },
         quantity: {
@@ -37,25 +59,27 @@ const orderSchema = new mongoose.Schema(
           required: true,
           min: 1,
         },
-        price: {
-          type: Number,
-          required: true,
-        },
+        images: [
+          {
+            type: String,
+            required: true,
+          },
+        ],
       },
     ],
     totalAmount: {
       type: Number,
       required: true,
+      min: 0,
     },
     paymentMethod: {
       type: String,
-      enum: ["cash_on_delivery"],
-      default: "cash_on_delivery",
+      default: "Cash on Delivery",
     },
     status: {
       type: String,
-      enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
-      default: "pending",
+      enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
+      default: "Pending",
     },
   },
   {
@@ -63,12 +87,4 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
-// Generate order number before saving
-orderSchema.pre("save", function (next) {
-  if (!this.orderNumber) {
-    this.orderNumber = "ORD" + Date.now() + Math.floor(Math.random() * 1000);
-  }
-  next();
-});
-
-module.exports = mongoose.model("Order", orderSchema);
+export default mongoose.model("Order", orderSchema);

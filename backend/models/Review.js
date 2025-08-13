@@ -1,8 +1,8 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema(
   {
-    product: {
+    productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
       required: true,
@@ -10,10 +10,7 @@ const reviewSchema = new mongoose.Schema(
     customerName: {
       type: String,
       required: true,
-    },
-    customerEmail: {
-      type: String,
-      required: true,
+      trim: true,
     },
     rating: {
       type: Number,
@@ -24,16 +21,21 @@ const reviewSchema = new mongoose.Schema(
     comment: {
       type: String,
       required: true,
+      trim: true,
     },
     images: [
       {
         type: String,
       },
     ],
+    verified: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model("Review", reviewSchema);
+export default mongoose.model("Review", reviewSchema);

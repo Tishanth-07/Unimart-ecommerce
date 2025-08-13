@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const contactSchema = new mongoose.Schema(
   {
@@ -15,19 +15,22 @@ const contactSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: true,
+      trim: true,
     },
     subject: {
       type: String,
       required: true,
+      trim: true,
     },
     message: {
       type: String,
       required: true,
+      trim: true,
     },
     status: {
       type: String,
-      enum: ["pending", "replied", "closed"],
-      default: "pending",
+      enum: ["Pending", "Replied", "Resolved"],
+      default: "Pending",
     },
   },
   {
@@ -35,4 +38,4 @@ const contactSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Contact", contactSchema);
+export default mongoose.model("Contact", contactSchema);

@@ -1,81 +1,93 @@
-const Product = require("../models/Product");
+import Product from "../models/Product.js";
+import Review from "../models/Review.js";
 
-// Get all products with filters, sorting, and pagination
-const getProducts = async (req, res) => {
+// Get all products with filtering, sorting, and pagination
+export const getProducts = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
 
-    // Build filter object
-    let filter = {};
+    let query = {};
+    let sortQuery = { createdAt: -1 }; // Default sorting
 
-    // Search filter
+    // Search functionality
     if (req.query.search) {
-      filter.$or = [
+      query.$or = [
         { name: { $regex: req.query.search, $options: "i" } },
         { description: { $regex: req.query.search, $options: "i" } },
-        { category: { $regex: req.query.search, $options: "i" } },
+        { shortDescription: { $regex: req.query.search, $options: "i" } },
       ];
     }
 
     // Category filter
-    if (req.query.category) {
+    if (req.query.category && req.query.category !== "") {
       const categories = req.query.category.split(",");
-      filter.category = { $in: categories };
+      query.category = { $in: categories };
     }
 
     // Price range filter
     if (req.query.minPrice || req.query.maxPrice) {
-      filter.discountedPrice = {};
-      if (req.query.minPrice)
-        filter.discountedPrice.$gte = parseFloat(req.query.minPrice);
-      if (req.query.maxPrice)
-        filter.discountedPrice.$lte = parseFloat(req.query.maxPrice);
+      query.price = {};
+      if (req.query.minPrice) {
+        query.price.$gte = parseFloat(req.query.minPrice);
+      }
+      if (req.query.maxPrice) {
+        query.price.$lte = parseFloat(req.query.maxPrice);
+      }
     }
 
     // Popularity filter
-    if (req.query.popularity) {
-      const popularityLevels = req.query.popularity.split(",");
-      const popularityRanges = popularityLevels.map((level) => {
+    if (req.query.popularity && req.query.popularity !== "") {
+      const popularityLevels = req.query.popularity.split(",").map((level) => {
         switch (level) {
-          case "high":
-            return { $gte: 80 };
-          case "medium":
-            return { $gte: 40, $lt: 80 };
-          case "low":
-            return { $lt: 40 };
+          case "trending":
+            return { popularity: { $gte: 100 } };
+          case "popular":
+            return { popularity: { $gte: 50 } };
+          case "featured":
+            return { popularity: { $gte: 25 } };
+          case "new":
+            return {
+              createdAt: {
+                $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+              },
+            };
           default:
             return {};
         }
       });
-      if (popularityRanges.length > 0) {
-        filter.$or = popularityRanges.map((range) => ({ popularity: range }));
+
+      if (popularityLevels.length > 0) {
+        query.$or = popularityLevels;
       }
     }
 
-    // Build sort object
-    let sort = {};
-    switch (req.query.sortBy) {
-      case "price_low_high":
-        sort.discountedPrice = 1;
-        break;
-      case "price_high_low":
-        sort.discountedPrice = -1;
-        break;
-      case "rating_high":
-        sort.averageRating = -1;
-        break;
-      default:
-        sort.createdAt = -1; // Default: newest first
+    // Sorting
+    if (req.query.sort) {
+      switch (req.query.sort) {
+        case "price_low_high":
+          sortQuery = { price: 1 };
+          break;
+        case "price_high_low":
+          sortQuery = { price: -1 };
+          break;
+        case "rating_high":
+          sortQuery = { averageRating: -1 };
+          break;
+        case "default":
+        default:
+          sortQuery = { createdAt: -1 };
+          break;
+      }
     }
 
-    const products = await Product.find(filter)
-      .sort(sort)
-      .skip(skip)
-      .limit(limit);
+    const products = await Product.find(query)
+      .sort(sortQuery)
+      .limit(limit)
+      .skip(skip);
 
-    const total = await Product.countDocuments(filter);
+    const total = await Product.countDocuments(query);
     const totalPages = Math.ceil(total / limit);
 
     res.json({
@@ -83,42 +95,79 @@ const getProducts = async (req, res) => {
       pagination: {
         currentPage: page,
         totalPages,
-        total,
-        hasNext: page < totalPages,
-        hasPrev: page > 1,
+        totalProducts: total,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
       },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error fetching products:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// Get single product
-const getProduct = async (req, res) => {
+// Get single product by ID
+export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
-    res.json(product);
+
+    // Get reviews for this product
+    const reviews = await Review.find({ productId: req.params.id }).sort({
+      createdAt: -1,
+    });
+
+    res.json({
+      product,
+      reviews,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error fetching product:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// Create product (for admin)
-const createProduct = async (req, res) => {
+// Get featured products for home page
+export const getFeaturedProducts = async (req, res) => {
   try {
-    const product = new Product(req.body);
-    await product.save();
-    res.status(201).json(product);
+    const products = await Product.find({ popularity: { $gte: 25 } })
+      .sort({ popularity: -1 })
+      .limit(8);
+
+    res.json(products);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Error fetching featured products:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-module.exports = {
-  getProducts,
-  getProduct,
-  createProduct,
+// Get price range for filters
+export const getPriceRange = async (req, res) => {
+  try {
+    const minPrice = await Product.findOne().sort({ price: 1 }).select("price");
+    const maxPrice = await Product.findOne()
+      .sort({ price: -1 })
+      .select("price");
+
+    res.json({
+      minPrice: minPrice?.price || 0,
+      maxPrice: maxPrice?.price || 1000,
+    });
+  } catch (error) {
+    console.error("Error fetching price range:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Get all categories
+export const getCategories = async (req, res) => {
+  try {
+    const categories = await Product.distinct("category");
+    res.json(categories);
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 };

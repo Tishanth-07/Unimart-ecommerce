@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
@@ -14,28 +14,21 @@ const productSchema = new mongoose.Schema(
     shortDescription: {
       type: String,
       required: true,
-      maxlength: 100,
     },
     price: {
       type: Number,
       required: true,
-    },
-    discount: {
-      type: Number,
-      default: 0,
       min: 0,
-      max: 100,
     },
-    discountedPrice: {
+    discountPrice: {
       type: Number,
-      default: function () {
-        return this.price - (this.price * this.discount) / 100;
-      },
+      min: 0,
+      default: null,
     },
     category: {
       type: String,
       required: true,
-      enum: ["Men", "Women", "Kids", "Accessories", "Footwear"],
+      enum: ["Men", "Women", "Kids", "Accessories", "Shoes"],
     },
     images: [
       {
@@ -58,7 +51,7 @@ const productSchema = new mongoose.Schema(
       min: 0,
       max: 5,
     },
-    reviewCount: {
+    totalReviews: {
       type: Number,
       default: 0,
     },
@@ -68,14 +61,16 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-// Calculate discounted price before saving
-productSchema.pre("save", function (next) {
-  if (this.discount > 0) {
-    this.discountedPrice = this.price - (this.price * this.discount) / 100;
-  } else {
-    this.discountedPrice = this.price;
+// Calculate discount percentage
+productSchema.virtual("discountPercentage").get(function () {
+  if (this.discountPrice && this.discountPrice < this.price) {
+    return Math.round(((this.price - this.discountPrice) / this.price) * 100);
   }
-  next();
+  return 0;
 });
 
-module.exports = mongoose.model("Product", productSchema);
+// Ensure virtual fields are serialized
+productSchema.set("toJSON", { virtuals: true });
+productSchema.set("toObject", { virtuals: true });
+
+export default mongoose.model("Product", productSchema);

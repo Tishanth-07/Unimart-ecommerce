@@ -1,11 +1,27 @@
-const express = require("express");
-const router = express.Router();
-const {
+import express from "express";
+import {
   createReview,
   getProductReviews,
-} = require("../controllers/reviewController");
+  getAllReviews,
+  updateReviewStatus,
+  deleteReview,
+} from "../controllers/reviewController.js";
 
+const router = express.Router();
+
+// Create new review
 router.post("/", createReview);
+
+// Get all reviews (for admin)
+router.get("/", getAllReviews);
+
+// Get reviews for a specific product
 router.get("/product/:productId", getProductReviews);
 
-module.exports = router;
+// Update review status
+router.put("/:id/status", updateReviewStatus);
+
+// Delete review
+router.delete("/:id", deleteReview);
+
+export default router;

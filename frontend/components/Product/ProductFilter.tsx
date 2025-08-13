@@ -1,10 +1,13 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
-import { FilterOptions } from "@/types";
+import { FilterState } from "@/types";
+import { productsAPI } from "@/utils/api";
+import { X, ChevronDown, ChevronUp } from "lucide-react";
 
 interface ProductFilterProps {
-  filters: FilterOptions;
-  onFilterChange: (filters: FilterOptions) => void;
+  filters: FilterState;
+  onFilterChange: (filters: FilterState) => void;
   onClearFilters: () => void;
 }
 
@@ -13,144 +16,343 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
   onFilterChange,
   onClearFilters,
 }) => {
-  const [priceRange, setPriceRange] = useState(filters.priceRange);
-  const [localFilters, setLocalFilters] = useState(filters);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    price: true,
+    category: true,
+    popularity: true,
+  });
 
-  const categories = ["Men", "Women", "Kids", "Accessories", "Footwear"];
+  // Price range state
+  const [priceRange, setPriceRange] = useState(filters.priceRange);
+
+  // Predefined popularity options
   const popularityOptions = [
-    { value: "high", label: "High (80+)" },
-    { value: "medium", label: "Medium (40-80)" },
-    { value: "low", label: "Low (0-40)" },
+    { label: "Very Popular (90+)", value: "90-100", min: 90, max: 100 },
+    { label: "Popular (70+)", value: "70-89", min: 70, max: 89 },
+    { label: "Moderate (50+)", value: "50-69", min: 50, max: 69 },
+    { label: "New Products", value: "1-49", min: 1, max: 49 },
+    { label: "Featured", value: "featured", min: 80, max: 100 },
   ];
 
-  const handleCategoryChange = (category: string) => {
-    const updatedCategories = localFilters.categories.includes(category)
-      ? localFilters.categories.filter((c) => c !== category)
-      : [...localFilters.categories, category];
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
-    const updatedFilters = { ...localFilters, categories: updatedCategories };
-    setLocalFilters(updatedFilters);
-    onFilterChange(updatedFilters);
+  useEffect(() => {
+    setPriceRange(filters.priceRange);
+  }, [filters.priceRange]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await productsAPI.getCategories();
+      const data = response as { categories?: string[] };
+      setCategories(data.categories || []);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
+
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
+  const handlePriceRangeChange = (index: number, value: number) => {
+    const newRange = [...priceRange] as [number, number];
+    newRange[index] = value;
+
+    // Ensure min is not greater than max
+    if (index === 0 && value > newRange[1]) {
+      newRange[1] = value;
+    } else if (index === 1 && value < newRange[0]) {
+      newRange[0] = value;
+    }
+
+    setPriceRange(newRange);
+  };
+
+  const applyPriceFilter = () => {
+    onFilterChange({
+      ...filters,
+      priceRange,
+    });
+  };
+
+  const handleCategoryChange = (category: string) => {
+    const updatedCategories = filters.categories.includes(category)
+      ? filters.categories.filter((c) => c !== category)
+      : [...filters.categories, category];
+
+    onFilterChange({
+      ...filters,
+      categories: updatedCategories,
+    });
   };
 
   const handlePopularityChange = (popularity: string) => {
-    const updatedPopularity = localFilters.popularity.includes(popularity)
-      ? localFilters.popularity.filter((p) => p !== popularity)
-      : [...localFilters.popularity, popularity];
+    const updatedPopularity = filters.popularity.includes(popularity)
+      ? filters.popularity.filter((p) => p !== popularity)
+      : [...filters.popularity, popularity];
 
-    const updatedFilters = { ...localFilters, popularity: updatedPopularity };
-    setLocalFilters(updatedFilters);
-    onFilterChange(updatedFilters);
+    onFilterChange({
+      ...filters,
+      popularity: updatedPopularity,
+    });
   };
 
-  const handlePriceFilter = () => {
-    const updatedFilters = { ...localFilters, priceRange };
-    setLocalFilters(updatedFilters);
-    onFilterChange(updatedFilters);
-  };
+  const hasActiveFilters =
+    filters.categories.length > 0 ||
+    filters.popularity.length > 0 ||
+    filters.priceRange[0] > 0 ||
+    filters.priceRange[1] < 10000;
 
-  const handleClearFilters = () => {
-    const clearedFilters = {
-      categories: [],
-      priceRange: { min: 0, max: 1000 },
-      popularity: [],
-    };
-    setLocalFilters(clearedFilters);
-    setPriceRange({ min: 0, max: 1000 });
-    onClearFilters();
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-LK", {
+      style: "currency",
+      currency: "LKR",
+      minimumFractionDigits: 0,
+    }).format(price);
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
-        <button
-          onClick={handleClearFilters}
-          className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-        >
-          Clear All
-        </button>
-      </div>
-
-      {/* Category Filter */}
-      <div className="mb-6">
-        <h4 className="text-md font-medium text-gray-900 mb-3">Category</h4>
-        <div className="space-y-2">
-          {categories.map((category) => (
-            <label key={category} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={localFilters.categories.includes(category)}
-                onChange={() => handleCategoryChange(category)}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <span className="ml-2 text-sm text-gray-700">{category}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Price Range Filter */}
-      <div className="mb-6">
-        <h4 className="text-md font-medium text-gray-900 mb-3">Price Range</h4>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">
-              Min Price
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="500"
-              value={priceRange.min}
-              onChange={(e) =>
-                setPriceRange({ ...priceRange, min: parseInt(e.target.value) })
-              }
-              className="w-full"
-            />
-            <span className="text-sm text-gray-600">${priceRange.min}</span>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">
-              Max Price
-            </label>
-            <input
-              type="range"
-              min="100"
-              max="1000"
-              value={priceRange.max}
-              onChange={(e) =>
-                setPriceRange({ ...priceRange, max: parseInt(e.target.value) })
-              }
-              className="w-full"
-            />
-            <span className="text-sm text-gray-600">${priceRange.max}</span>
-          </div>
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+        <div className="flex items-center space-x-2">
+          {hasActiveFilters && (
+            <button
+              onClick={onClearFilters}
+              className="text-sm text-red-600 hover:text-red-700 transition-colors duration-200"
+            >
+              Clear All
+            </button>
+          )}
           <button
-            onClick={handlePriceFilter}
-            className="w-full bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 transition-colors"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="md:hidden text-gray-500 hover:text-gray-700"
           >
-            Apply Price Filter
+            {isCollapsed ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronUp className="h-4 w-4" />
+            )}
           </button>
         </div>
       </div>
 
-      {/* Popularity Filter */}
-      <div className="mb-6">
-        <h4 className="text-md font-medium text-gray-900 mb-3">Popularity</h4>
-        <div className="space-y-2">
-          {popularityOptions.map((option) => (
-            <label key={option.value} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={localFilters.popularity.includes(option.value)}
-                onChange={() => handlePopularityChange(option.value)}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <span className="ml-2 text-sm text-gray-700">{option.label}</span>
-            </label>
-          ))}
+      <div className={`space-y-6 ${isCollapsed ? "hidden md:block" : ""}`}>
+        {/* Price Filter */}
+        <div>
+          <button
+            onClick={() => toggleSection("price")}
+            className="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-3"
+          >
+            <span>Price Range</span>
+            {expandedSections.price ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
+
+          {expandedSections.price && (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={priceRange[0]}
+                  onChange={(e) =>
+                    handlePriceRangeChange(0, parseInt(e.target.value) || 0)
+                  }
+                  className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <span className="text-gray-500">to</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={priceRange[1]}
+                  onChange={(e) =>
+                    handlePriceRangeChange(1, parseInt(e.target.value) || 10000)
+                  }
+                  className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="10000"
+                  value={priceRange[0]}
+                  onChange={(e) =>
+                    handlePriceRangeChange(0, parseInt(e.target.value))
+                  }
+                  className="range-slider w-full"
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="10000"
+                  value={priceRange[1]}
+                  onChange={(e) =>
+                    handlePriceRangeChange(1, parseInt(e.target.value))
+                  }
+                  className="range-slider w-full"
+                />
+              </div>
+
+              <div className="flex justify-between text-sm text-gray-500">
+                <span>{formatPrice(priceRange[0])}</span>
+                <span>{formatPrice(priceRange[1])}</span>
+              </div>
+
+              <button
+                onClick={applyPriceFilter}
+                className="w-full btn-primary text-sm py-2"
+              >
+                Apply Price Filter
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Category Filter */}
+        <div>
+          <button
+            onClick={() => toggleSection("category")}
+            className="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-3"
+          >
+            <span>Categories</span>
+            {expandedSections.category ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
+
+          {expandedSections.category && (
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {categories.map((category) => (
+                <label
+                  key={category}
+                  className="flex items-center space-x-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={filters.categories.includes(category)}
+                    onChange={() => handleCategoryChange(category)}
+                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-700 capitalize">
+                    {category}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Popularity Filter */}
+        <div>
+          <button
+            onClick={() => toggleSection("popularity")}
+            className="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-3"
+          >
+            <span>Popularity</span>
+            {expandedSections.popularity ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
+
+          {expandedSections.popularity && (
+            <div className="space-y-2">
+              {popularityOptions.map((option) => (
+                <label
+                  key={option.value}
+                  className="flex items-center space-x-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={filters.popularity.includes(option.value)}
+                    onChange={() => handlePopularityChange(option.value)}
+                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-700">{option.label}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Active Filters */}
+        {hasActiveFilters && (
+          <div>
+            <h3 className="font-medium text-gray-900 mb-3">Active Filters</h3>
+            <div className="space-y-2">
+              {filters.categories.map((category) => (
+                <div
+                  key={category}
+                  className="inline-flex items-center bg-primary-100 text-primary-800 text-sm px-3 py-1 rounded-full mr-2 mb-2"
+                >
+                  <span className="capitalize">{category}</span>
+                  <button
+                    onClick={() => handleCategoryChange(category)}
+                    className="ml-2 text-primary-600 hover:text-primary-800"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+
+              {filters.popularity.map((popularity) => (
+                <div
+                  key={popularity}
+                  className="inline-flex items-center bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full mr-2 mb-2"
+                >
+                  <span>
+                    {
+                      popularityOptions.find((p) => p.value === popularity)
+                        ?.label
+                    }
+                  </span>
+                  <button
+                    onClick={() => handlePopularityChange(popularity)}
+                    className="ml-2 text-green-600 hover:text-green-800"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+
+              {(filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) && (
+                <div className="inline-flex items-center bg-yellow-100 text-yellow-800 text-sm px-3 py-1 rounded-full mr-2 mb-2">
+                  <span>
+                    {formatPrice(filters.priceRange[0])} -{" "}
+                    {formatPrice(filters.priceRange[1])}
+                  </span>
+                  <button
+                    onClick={() =>
+                      onFilterChange({
+                        ...filters,
+                        priceRange: [0, 10000],
+                      })
+                    }
+                    className="ml-2 text-yellow-600 hover:text-yellow-800"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
