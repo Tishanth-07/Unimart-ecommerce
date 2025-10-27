@@ -35,7 +35,8 @@ export const createContact = async (req, res) => {
       contact: {
         id: contact._id,
         name: contact.name,
-        message: contact.subject,
+        message: contact.message,
+        email: contact.email,
         createdAt: contact.createdAt,
       },
     });

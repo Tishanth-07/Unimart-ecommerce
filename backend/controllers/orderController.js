@@ -11,7 +11,7 @@ const generateOrderNumber = () => {
 // Create new order
 export const createOrder = async (req, res) => {
   try {
-    const { customerDetails, items } = req.body;
+    const { customerDetails, items, paymentMethod } = req.body;
 
     // Validate required fields
     if (!customerDetails || !items || items.length === 0) {
@@ -21,8 +21,8 @@ export const createOrder = async (req, res) => {
     }
 
     // Validate customer details
-    const requiredFields = ["name", "email", "phone", "address"];
-    for (const field of requiredFields) {
+    const requiredCustomerFields = ["name", "email", "phone", "address"];
+    for (const field of requiredCustomerFields) {
       if (!customerDetails[field]) {
         return res.status(400).json({ message: `${field} is required` });
       }
@@ -38,7 +38,7 @@ export const createOrder = async (req, res) => {
       }
     }
 
-    // Calculate total amount and validate items
+    // Validate items and calculate total
     let totalAmount = 0;
     const validatedItems = [];
 
@@ -64,7 +64,7 @@ export const createOrder = async (req, res) => {
         name: product.name,
         price: itemPrice,
         quantity: item.quantity,
-        image: product.images[0],
+        images: product.images, // match your model
       });
 
       // Update product stock
@@ -78,6 +78,7 @@ export const createOrder = async (req, res) => {
       customerDetails,
       items: validatedItems,
       totalAmount,
+      paymentMethod: paymentMethod || "Cash on Delivery",
     });
 
     await order.save();
@@ -88,6 +89,7 @@ export const createOrder = async (req, res) => {
         orderNumber: order.orderNumber,
         totalAmount: order.totalAmount,
         status: order.status,
+        paymentMethod: order.paymentMethod,
         createdAt: order.createdAt,
       },
     });
