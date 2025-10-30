@@ -143,7 +143,7 @@ const CheckoutPage = () => {
       // Prepare order data to match API client expectations
       const orderData = {
         items: cart.map((item) => ({
-          product: item.product._id,
+          productId: item.product._id,
           quantity: item.quantity,
           price: item.product.discountedPrice || item.product.price,
         })),
@@ -151,8 +151,12 @@ const CheckoutPage = () => {
           name: customerDetails.name.trim(),
           email: customerDetails.email.trim(),
           phone: customerDetails.phone.trim(),
-          // Convert structured address to single string for API compatibility
-          address: `${customerDetails.address.street.trim()}, ${customerDetails.address.city.trim()}, ${customerDetails.address.state.trim()} ${customerDetails.address.zipCode.trim()}`,
+          address: {
+            street: customerDetails.address.street.trim(),
+            city: customerDetails.address.city.trim(),
+            state: customerDetails.address.state.trim(),
+            zipCode: customerDetails.address.zipCode.trim(),
+          },
         },
         totalAmount: getCartTotal(),
         paymentMethod: "cash_on_delivery",

@@ -41,12 +41,17 @@ export const productsAPI = {
 // Orders API
 export const ordersAPI = {
   create: async (orderData: {
-    items: { product: string; quantity: number; price: number }[];
+    items: { productId: string; quantity: number; price: number }[];
     customerDetails: {
       name: string;
       email: string;
       phone: string;
-      address: string;
+      address: {
+        street: string;
+        city: string;
+        state: string;
+        zipCode: string;
+      };
     };
     totalAmount: number;
     paymentMethod: string;

@@ -150,7 +150,8 @@ const OrderSuccessPage = () => {
                   <strong>Phone:</strong> {order.customerDetails.phone}
                 </p>
                 <p>
-                  <strong>Address:</strong> {order.customerDetails.address}
+                  <strong>Address:</strong>{" "}
+                  {`${order.customerDetails.address.street}, ${order.customerDetails.address.city}, ${order.customerDetails.address.state} ${order.customerDetails.address.zipCode}`}
                 </p>
               </div>
             </div>
@@ -165,7 +166,8 @@ const OrderSuccessPage = () => {
                   {new Date(order.createdAt).toLocaleDateString()}
                 </p>
                 <p>
-                  <strong>Payment Method:</strong> Cash on Delivery
+                  <strong>Payment Method:</strong>{" "}
+                  {order.paymentMethod || "Cash on Delivery"}
                 </p>
                 <p>
                   <strong>Total Amount:</strong>{" "}
@@ -193,19 +195,23 @@ const OrderSuccessPage = () => {
                   className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
                 >
                   <div className="flex items-center space-x-4">
-                    <img
-                      src={item.product.images?.[0] || "/placeholder-image.jpg"}
-                      alt={item.product.name}
-                      className="w-16 h-16 object-cover rounded-lg border"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "/placeholder-image.jpg";
-                      }}
-                    />
+        <img
+          src={
+            Array.isArray(item.images)
+              ? item.images[0] || "/placeholder-image.jpg"
+              : typeof item.images === "string"
+              ? item.images
+              : "/placeholder-image.jpg"
+          }
+          alt={item.name}
+          className="w-16 h-16 object-cover rounded-lg border"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = "/placeholder-image.jpg";
+          }}
+        />
                     <div>
-                      <h4 className="font-medium text-gray-900">
-                        {item.product.name}
-                      </h4>
+                      <h4 className="font-medium text-gray-900">{item.name}</h4>
                       <p className="text-sm text-gray-600">
                         Quantity: {item.quantity}
                       </p>
@@ -220,7 +226,7 @@ const OrderSuccessPage = () => {
                       {formatPrice(item.price * item.quantity)}
                     </p>
                     <button
-                      onClick={() => handleReviewProduct(item.product._id)}
+                      onClick={() => handleReviewProduct(item.productId)}
                       className="mt-2 inline-flex items-center space-x-1 text-sm text-primary-600 hover:text-primary-700 transition-colors duration-200"
                     >
                       <Star className="h-4 w-4" />

@@ -21,16 +21,19 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface OrderItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  images: string[];
+  product?: Product; // optional, used if you want to store full product data
+}
+
 export interface Order {
   _id: string;
   orderNumber: string;
-  items: {
-    productId: string;
-    name: string;
-    price: number;
-    quantity: number;
-    images: string[];
-  }[];
+  items: OrderItem[];
   customerDetails: {
     name: string;
     email: string;
@@ -86,3 +89,4 @@ export interface PaginationInfo {
   hasNextPage: boolean;
   hasPrevPage: boolean;
 }
+
