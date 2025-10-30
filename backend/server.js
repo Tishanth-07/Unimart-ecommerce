@@ -6,6 +6,9 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import connectDB from "./config/database.js";
+import passport from "passport";
+import "./config/passport.js";
+import session from "express-session";
 
 // Routes
 import productRoutes from "./routes/products.js";
@@ -13,6 +16,7 @@ import orderRoutes from "./routes/orders.js";
 import reviewRoutes from "./routes/reviews.js";
 import contactRoutes from "./routes/contact.js";
 import authRoutes from "./routes/auth.js";
+import googleAuthRoutes from "./routes/auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +40,15 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files for uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  session({
+    secret: process.env.JWT_SECRET,
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Routes
 app.use("/api/products", productRoutes);
@@ -43,6 +56,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/googleauth", googleAuthRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
