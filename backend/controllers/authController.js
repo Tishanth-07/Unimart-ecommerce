@@ -62,7 +62,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     lastName,
     email,
     password,
-    emailVerificationCode: emailCode,
+    verificationCode: emailCode,
   });
   await sendEmail(
     email,
@@ -79,15 +79,61 @@ export const registerUser = asyncHandler(async (req, res) => {
 export const verifyEmail = asyncHandler(async (req, res) => {
   const { userId, code } = req.body;
   const user = await User.findById(userId);
-  if (!user || user.emailVerificationCode !== code) {
+
+  if (!user) {
+    res.status(400);
+    throw new Error("User not found");
+  }
+
+  // Normalize code values
+  const userCode = String(user.verificationCode || "").trim();
+  const inputCode = String(code || "").trim();
+
+  console.log("User code:", userCode);
+  console.log("Input code:", inputCode);
+
+  if (!userCode || userCode !== inputCode) {
     res.status(400);
     throw new Error("Invalid verification code");
   }
+
   user.isVerified = true;
-  user.emailVerificationCode = null;
+  user.verificationCode = null;
   await user.save();
+
   res.json({ token: generateToken(user._id, user.role) });
 });
+
+
+
+// ---------------------- Resend Code ----------------------
+export const resendVerificationCode = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  if (user.isVerified) {
+    res.status(400);
+    throw new Error("Email already verified");
+  }
+
+  const newCode = generateCode();
+  user.verificationCode = newCode;
+  await user.save();
+
+  await sendEmail(
+    email,
+    "Resend Verification Code",
+    `Your new verification code is: ${newCode}`
+  );
+
+  res.json({ message: "New verification code sent to email" });
+});
+
 
 // @desc Login
 export const loginUser = asyncHandler(async (req, res) => {
@@ -103,12 +149,13 @@ export const loginUser = asyncHandler(async (req, res) => {
     throw new Error("Email not verified");
   }
 
-  if (user.password && (await user.matchPassword(password))) {
-    return res.json({ token: generateToken(user._id, user.role) });
+  const isMatch = user.password && (await user.matchPassword(password));
+  if (!isMatch) {
+    res.status(401);
+    throw new Error("Invalid email or password");
   }
 
-  res.status(401);
-  throw new Error("Invalid email or password");
+  res.json({ token: generateToken(user._id, user.role) });
 });
 
 // @desc Forgot password
@@ -130,18 +177,35 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 export const resetPassword = asyncHandler(async (req, res) => {
   const { email, code, newPassword } = req.body;
   const user = await User.findOne({ email });
-  if (!user || user.resetPasswordCode !== code) {
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  // Normalize values
+  const storedCode = String(user.resetPasswordCode || "").trim();
+  const inputCode = String(code || "").trim();
+
+  console.log("Stored reset code:", storedCode);
+  console.log("Input reset code:", inputCode);
+
+  if (!storedCode || storedCode !== inputCode) {
     res.status(400);
     throw new Error("Invalid code");
   }
+
   if (!validatePassword(newPassword)) {
     res.status(400);
     throw new Error(
       "Password must have 6+ chars, 1 capital, 1 number, 1 symbol"
     );
   }
+
   user.password = newPassword;
-  user.resetPasswordCode = null;
+  user.resetPasswordCode = null; // ✅ clear code after reset
   await user.save();
+
   res.json({ message: "Password reset successfully" });
 });
+
