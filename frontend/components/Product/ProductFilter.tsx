@@ -29,11 +29,10 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
 
   // Predefined popularity options
   const popularityOptions = [
-    { label: "Very Popular (90+)", value: "90-100", min: 90, max: 100 },
-    { label: "Popular (70+)", value: "70-89", min: 70, max: 89 },
-    { label: "Moderate (50+)", value: "50-69", min: 50, max: 69 },
-    { label: "New Products", value: "1-49", min: 1, max: 49 },
-    { label: "Featured", value: "featured", min: 80, max: 100 },
+    { label: "Trending (100+)", value: "trending" },
+    { label: "Popular (50+)", value: "popular" },
+    { label: "Featured", value: "featured" },
+    { label: "New Products", value: "new" },
   ];
 
   useEffect(() => {

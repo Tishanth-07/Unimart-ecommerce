@@ -57,17 +57,22 @@ const ShopPage = () => {
   const fetchProducts = async (page = 1) => {
     setLoading(true);
     try {
+      const search = searchParams?.get("search") || "";
+      const categoryParam = filters.categories.join(",");
+
       const params: any = {
         page,
+        search,
         limit: 12,
+        sort: sortBy,
       };
 
       if (searchQuery) {
         params.search = searchQuery;
       }
 
-      if (filters.categories.length > 0) {
-        params.category = filters.categories.join(",");
+      if (filters.categories.length) {
+        params.category = categoryParam;
       }
 
       if (filters.priceRange[0] > 0) {
@@ -78,13 +83,8 @@ const ShopPage = () => {
         params.maxPrice = filters.priceRange[1];
       }
 
-      if (filters.popularity.length > 0) {
-        params.popularity = filters.popularity.join(",");
-      }
-
-      if (sortBy !== "default") {
-        params.sortBy = sortBy;
-      }
+     if (filters.popularity.length)
+       params.popularity = filters.popularity.join(",");
 
       const response = await productsAPI.getAll(params) as { products: Product[]; pagination: PaginationInfo };
       setProducts(response.products);
@@ -112,10 +112,13 @@ const ShopPage = () => {
     setPagination((prev) => ({ ...prev, currentPage: 1 }));
   };
 
-  const handlePageChange = (page: number) => {
-    fetchProducts(page);
-    setPagination((prev) => ({ ...prev, currentPage: page }));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const handlePageChange = async (page: number) => {
+    setLoading(true);
+    try {
+      await fetchProducts(page);
+    } finally {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const clearFilters = () => {

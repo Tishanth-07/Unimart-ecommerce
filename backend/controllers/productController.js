@@ -65,21 +65,33 @@ export const getProducts = async (req, res) => {
 
     // Sorting
     if (req.query.sort) {
-      switch (req.query.sort) {
-        case "price_low_high":
-          sortQuery = { price: 1 };
-          break;
-        case "price_high_low":
-          sortQuery = { price: -1 };
-          break;
-        case "rating_high":
-          sortQuery = { averageRating: -1 };
-          break;
-        case "default":
-        default:
-          sortQuery = { createdAt: -1 };
-          break;
-      }
+     switch (req.query.sort) {
+       case "price_asc":
+         sortQuery = { price: 1 };
+         break;
+       case "price_desc":
+         sortQuery = { price: -1 };
+         break;
+       case "rating_desc":
+         sortQuery = { averageRating: -1 };
+         break;
+       case "popularity_desc":
+         sortQuery = { popularity: -1 };
+         break;
+       case "newest":
+         sortQuery = { createdAt: -1 };
+         break;
+       case "name_asc":
+         sortQuery = { name: 1 };
+         break;
+       case "name_desc":
+         sortQuery = { name: -1 };
+         break;
+       case "default":
+       default:
+         sortQuery = { createdAt: -1 };
+         break;
+     }
     }
 
     const products = await Product.find(query)
