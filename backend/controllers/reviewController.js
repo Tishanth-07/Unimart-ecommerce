@@ -1,20 +1,29 @@
 import Review from "../models/Review.js";
 import Product from "../models/Product.js";
+import mongoose from "mongoose";
 
 // Create new review
 export const createReview = async (req, res) => {
   try {
-    const { productId, customerName, rating, comment, images } = req.body;
+    const { productId, customerName, rating, comment } = req.body;
+    const files = Array.isArray(req.files) ? req.files : [];
+    const uploadedImages = files.map((file) => file.filename);
+    const numericRating = Number(rating);
 
     // Validate required fields
-    if (!productId || !customerName || !rating || !comment) {
+    if (!productId || !customerName || !numericRating || !comment) {
       return res.status(400).json({
         message: "Product ID, customer name, rating, and comment are required",
       });
     }
 
+    // Validate productId
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ message: "Invalid product ID" });
+    }
+
     // Validate rating
-    if (rating < 1 || rating > 5) {
+    if (numericRating < 1 || numericRating > 5) {
       return res
         .status(400)
         .json({ message: "Rating must be between 1 and 5" });
@@ -30,9 +39,9 @@ export const createReview = async (req, res) => {
     const review = new Review({
       productId,
       customerName,
-      rating,
+      rating: numericRating,
       comment,
-      images: images || [],
+      images: uploadedImages,
     });
 
     await review.save();
@@ -54,6 +63,9 @@ export const createReview = async (req, res) => {
 export const getProductReviews = async (req, res) => {
   try {
     const { productId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ message: "Invalid product ID" });
+    }
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
@@ -65,24 +77,16 @@ export const getProductReviews = async (req, res) => {
 
     const total = await Review.countDocuments({ productId });
 
-    // Get rating distribution
-    const ratingStats = await Review.aggregate([
-      { $match: { productId: mongoose.Types.ObjectId(productId) } },
-      { $group: { _id: "$rating", count: { $sum: 1 } } },
-      { $sort: { _id: -1 } },
+    // Compute rating distribution robustly without aggregation
+    const [c1, c2, c3, c4, c5] = await Promise.all([
+      Review.countDocuments({ productId, rating: 1 }),
+      Review.countDocuments({ productId, rating: 2 }),
+      Review.countDocuments({ productId, rating: 3 }),
+      Review.countDocuments({ productId, rating: 4 }),
+      Review.countDocuments({ productId, rating: 5 }),
     ]);
 
-    const ratingDistribution = {
-      5: 0,
-      4: 0,
-      3: 0,
-      2: 0,
-      1: 0,
-    };
-
-    ratingStats.forEach((stat) => {
-      ratingDistribution[stat._id] = stat.count;
-    });
+    const ratingDistribution = { 5: c5, 4: c4, 3: c3, 2: c2, 1: c1 };
 
     res.json({
       reviews,

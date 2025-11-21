@@ -6,9 +6,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 const api = axios.create({
   baseURL: API_URL,
   timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
 // Products API
@@ -92,11 +89,7 @@ export const reviewsAPI = {
       });
     }
 
-    const response = await api.post("/reviews", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await api.post("/reviews", formData);
     return response.data;
   },
 };
