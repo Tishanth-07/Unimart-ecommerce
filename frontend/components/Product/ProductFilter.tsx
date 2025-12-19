@@ -46,10 +46,16 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
   const fetchCategories = async () => {
     try {
       const response = await productsAPI.getCategories();
-      const data = response as { categories?: string[] };
-      setCategories(data.categories || []);
+      let cats: string[] = [];
+      if (Array.isArray(response)) {
+        cats = response as string[];
+      } else if (response && Array.isArray((response as any).categories)) {
+        cats = (response as any).categories as string[];
+      }
+      setCategories(cats);
     } catch (error) {
       console.error("Error fetching categories:", error);
+      setCategories([]);
     }
   };
 
@@ -236,22 +242,26 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
 
           {expandedSections.category && (
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {categories.map((category) => (
-                <label
-                  key={category}
-                  className="flex items-center space-x-2 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.categories.includes(category)}
-                    onChange={() => handleCategoryChange(category)}
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-700 capitalize">
-                    {category}
-                  </span>
-                </label>
-              ))}
+              {categories.length === 0 ? (
+                <p className="text-sm text-gray-500">No categories found</p>
+              ) : (
+                categories.map((category) => (
+                  <label
+                    key={category}
+                    className="flex items-center space-x-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={filters.categories.includes(category)}
+                      onChange={() => handleCategoryChange(category)}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-700 capitalize">
+                      {category}
+                    </span>
+                  </label>
+                ))
+              )}
             </div>
           )}
         </div>
