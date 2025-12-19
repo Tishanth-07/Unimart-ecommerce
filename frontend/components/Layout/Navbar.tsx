@@ -21,9 +21,7 @@ const Navbar = () => {
     }
   };
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
+  
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -80,12 +78,12 @@ const Navbar = () => {
                 </span>
               )}
             </Link>
-            <button
+            {/* <button
               onClick={toggleMenu}
               className="text-gray-700 hover:text-primary-600 transition-colors duration-200"
             >
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
+            </button> */}
           </div>
         </div>
 
